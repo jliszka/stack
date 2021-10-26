@@ -80,85 +80,85 @@ object Parser {
     }
 
     def parse(s: String): Prog = {
-    	parseProg.parse(lex(s)).map({ case (prog, tokens) => {
-    		if (!tokens.isEmpty) {
-    			throw new Exception("Unexpected end of input at " + tokens)
-    		}
-    		prog
-    	}}).get
+        parseProg.parse(lex(s)).map({ case (prog, tokens) => {
+            if (!tokens.isEmpty) {
+                throw new Exception("Unexpected end of input at " + tokens)
+            }
+            prog
+        }}).get
     }
 
     val parseAny: Parser[Token] = new Parser[Token] {
-    	def parse(tokens: List[Token]): Option[(Token, List[Token])] = tokens match {
-    		case Nil => None
-    		case h::t => Some((h, t))
-    	}
+        def parse(tokens: List[Token]): Option[(Token, List[Token])] = tokens match {
+            case Nil => None
+            case h::t => Some((h, t))
+        }
     }
 
     def succeed[A](a: A): Parser[A] = new Parser[A] {
-    	def parse(tokens: List[Token]): Option[(A, List[Token])] = Some((a, tokens))
+        def parse(tokens: List[Token]): Option[(A, List[Token])] = Some((a, tokens))
     }
 
     def fail[A]: Parser[A] = new Parser[A] {
-    	def parse(tokens: List[Token]): Option[(A, List[Token])] = None
+        def parse(tokens: List[Token]): Option[(A, List[Token])] = None
     }
 
     def parseLit(t: Token): Parser[Token] = {
-    	for {
-    		a <- parseAny
-    		if a == t
-    	} yield a
+        for {
+            a <- parseAny
+            if a == t
+        } yield a
     }
 
     val anyName: Parser[String] = {
-    	parseAny.flatMap(t => t match {
-    		case Name(n) => succeed(n)
-    		case _ => fail
-    	})
+        parseAny.flatMap(t => t match {
+            case Name(n) => succeed(n)
+            case _ => fail
+        })
     }
 
     val anyNumber: Parser[Int] = {
-    	parseAny.flatMap(t => t match {
-    		case Number(n) => succeed(n)
-    		case _ => fail
-    	})
+        parseAny.flatMap(t => t match {
+            case Number(n) => succeed(n)
+            case _ => fail
+        })
     }
 
     val parseLambda: Parser[Op] = {
-    	(parseLit(LBracket) >>> parseOp.repeat <<< parseLit(RBracket)).map(Lambda)
+        (parseLit(LBracket) >>> parseOp.repeat <<< parseLit(RBracket)).map(Lambda)
     }
 
     val parseOp: Parser[Op] = {
-    	parseLambda |||
-    	parseLit(Name("+")).map(_ => Plus) |||
-    	parseLit(Name("-")).map(_ => Minus) |||
-    	parseLit(Name("*")).map(_ => Times) |||
-    	parseLit(Name("/")).map(_ => Div) |||
-    	parseLit(Name("%")).map(_ => Mod) |||
-    	parseLit(Name("=")).map(_ => Equal) |||
-    	parseLit(Name("<")).map(_ => Less) |||
-    	parseLit(Name("AND")).map(_ => And) |||
-    	parseLit(Name("OR")).map(_ => Or) |||
-    	parseLit(Name("NOT")).map(_ => Not) |||
-    	parseLit(Name("DROP")).map(_ => Drop) |||
-    	parseLit(Name("DUP")).map(_ => Dup) |||
-    	parseLit(Name("OVER")).map(_ => Over) |||
-    	parseLit(Name("SWAP")).map(_ => Swap) |||
-    	parseLit(Name(">R")).map(_ => ToR) |||
-    	parseLit(Name("R>")).map(_ => FromR) |||
-    	parseLit(Name("IF")).map(_ => If) |||
-    	parseLit(Name("TRUE")).map(_ => True) |||
-    	parseLit(Name("FALSE")).map(_ => False) |||
-    	parseLit(Name("!")).map(_ => Call) |||
-    	anyName.map(Fn) |||
-    	anyNumber.map(Lit)
+        parseLambda |||
+        parseLit(Name("+")).map(_ => Plus) |||
+        parseLit(Name("-")).map(_ => Minus) |||
+        parseLit(Name("*")).map(_ => Times) |||
+        parseLit(Name("/")).map(_ => Div) |||
+        parseLit(Name("%")).map(_ => Mod) |||
+        parseLit(Name("=")).map(_ => Equal) |||
+        parseLit(Name("<")).map(_ => Less) |||
+        parseLit(Name("AND")).map(_ => And) |||
+        parseLit(Name("OR")).map(_ => Or) |||
+        parseLit(Name("NOT")).map(_ => Not) |||
+        parseLit(Name("DROP")).map(_ => Drop) |||
+        parseLit(Name("DUP")).map(_ => Dup) |||
+        parseLit(Name("OVER")).map(_ => Over) |||
+        parseLit(Name("SWAP")).map(_ => Swap) |||
+        parseLit(Name(">R")).map(_ => ToR) |||
+        parseLit(Name("R>")).map(_ => FromR) |||
+        parseLit(Name("IF")).map(_ => If) |||
+        parseLit(Name("TRUE")).map(_ => True) |||
+        parseLit(Name("FALSE")).map(_ => False) |||
+        parseLit(Name("!")).map(_ => Call) |||
+        anyName.map(Fn) |||
+        anyNumber.map(Lit)
     }
 
     val parseDefn: Parser[Defn] = {
-    	(parseLit(Colon) >>> anyName &&& parseOp.repeat <<< parseLit(Semicolon)).map({ case (name, ops) => Defn(name, ops) })
+        (parseLit(Colon) >>> anyName &&& parseOp.repeat <<< parseLit(Semicolon)).map({ case (name, ops) => Defn(name, ops) })
     }
 
     val parseProg: Parser[Prog] = {
-    	(parseDefn.repeat &&& parseOp.repeat).map({ case (defns, ops) => Prog(defns, ops) })
+        (parseDefn.repeat &&& parseOp.repeat).map({ case (defns, ops) => Prog(defns, ops) })
     }
 }

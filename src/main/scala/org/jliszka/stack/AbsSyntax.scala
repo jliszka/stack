@@ -65,7 +65,7 @@ case class Effects(data: Effect, ret: Effect) {
 
 
 sealed abstract class Value(s: String) {
-	override def toString: String = s
+    override def toString: String = s
 }
 case class BoolVal(b: Boolean) extends Value(b.toString)
 case class IntVal(i: Int) extends Value(i.toString)
