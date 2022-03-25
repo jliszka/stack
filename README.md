@@ -70,7 +70,7 @@ Typechecking a user-defined word or a program should be a simple matter of looki
 The goal here is not to add a type system to standard Forth, but to see if a Forth-like stack language can be constructed with some static type safety in the tradition of our favorite functional programming languages.
 
 ## Subtypes
-There is also a sense in which a type can be a subtype of another type. Type `A` is a subtype of type `B` if an `A` could substitute for a `B` when a `B` is needed.
+There is a sense in which a type can be a subtype of another type. Type `A` is a subtype of type `B` if an `A` could substitute for a `B` when a `B` is needed.
 For instance, if you need a `( int -- int int )`, an `( a -- a a )` will suffice; however, the converse is not true. 
 
 A more interesting case is that a `( -- int )` would also suffice. To show this, imagine the data stack is `2 3`. You close your eyes and when you open them, the stack is now `2 3 4`. You can't tell whether I applied the word
@@ -162,7 +162,7 @@ This is similar to &eta; : &alpha; &rarr; (&alpha; &rarr; &beta;) &rarr; &beta;,
 ```
 ( a* ( a* -- b* ) -- b* )
 ```
-This suggests that we do have a unique bottom type in the language, `( a* -- b* )`. However, this makes type unification significantly more difficult (I have not yet succeeded in a working implementation). It's not clear what constraints should be set up to feed to the constraint solver during unification, or even how they should be expressed. Even worse, remember that the type above is shorthand for
+This suggests that we do have a unique bottom type in the language, `( a* -- b* )`. However, adding star types to the language makes type unification significantly more difficult (I have not yet succeeded in a working implementation). It's not clear what constraints should be set up to feed to the constraint solver during unification, or even how they should be expressed. Even worse, remember that the type above is shorthand for
 ```
 ( x* a* ( x* a* -- x* b* ) -- x* b* )
 ```
@@ -179,6 +179,8 @@ This function applies a lambda to the stack twice. It duplicates the top element
 ```
 ( a* ( a* -- b* a* ) -- b* b* a* )
 ```
+
+This seems like a good test case for ensuring that star types are implemented correctly.
 
 ## Implementation
 
