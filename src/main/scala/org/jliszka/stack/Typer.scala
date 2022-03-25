@@ -57,15 +57,15 @@ object Typer {
                 case e: Exception => if (t.isEmpty) throw e else helper(t)
             }
         }
-        helper(List(
-            Effect(Nil, Nil),
-            Effect(ptype :: Nil, Nil),
-            Effect(ptype :: ptype :: Nil, Nil),
-            Effect(ptype :: ptype :: ptype :: Nil, Nil),
-            Effect(Nil, ptype :: Nil),
-            Effect(Nil, ptype :: ptype :: Nil),
-            Effect(Nil, ptype :: ptype :: ptype :: Nil),
-        ))
+        // Gross hack: try a some likely shapes for the recursive type,
+        // and see if any succeed.
+        val types = for {
+            n <- (0 to 3).toList
+            ts = List.fill(n)(ptype)
+            m <- (0 to 3).toList
+            (tl, tr) = ts.splitAt(m)
+        } yield Effect(tl, tr)
+        helper(types)
     }
 
     def check(ops: List[Op], ctx: Map[String, Effect]): Effects = ops match {
@@ -225,7 +225,13 @@ object Typer {
             if (e1NetChange != e2NetChange) {
                 throw new Exception(s"Cannot unify lambdas with types $e1 and $e2")
             }
-            if (e1.in.size > e2.in.size) e1 else e2
+            val (larger, smaller) = if (e1.in.size > e2.in.size) (e1, e2) else (e2, e1)
+            val inTail = larger.in.drop(smaller.in.size)
+            val outTail = larger.out.drop(smaller.out.size)
+            if (inTail != outTail) {
+                throw new Exception(s"Cannot unify lambdas with types $e1 and $e2")
+            }
+            larger
         }
 
         def leastUpperBoundL(f1: TLambda, f2: TLambda): TLambda = {
