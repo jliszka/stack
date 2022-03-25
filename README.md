@@ -67,6 +67,7 @@ DUP2 ( a b -- a b a b )
 
 Typechecking a user-defined word or a program should be a simple matter of looking up the stack effects of built-in and user-defined words in the definition, keeping track of their cumulative effects on the stack, and making sure the types match up where required.
 
+The goal here is not to add a type system to standard Forth, but to see if a Forth-like stack language can be constructed with some static type safety in the tradition of our favorite functional programming languages.
 
 ## Subtypes
 There is also a sense in which a type can be a subtype of another type. Type `A` is a subtype of type `B` if an `A` could substitute for a `B` when a `B` is needed.
