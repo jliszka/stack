@@ -1,0 +1,22 @@
+: OVER >R DUP R> SWAP ;
+: ROT >R SWAP R> SWAP ;
+: -ROT SWAP >R SWAP R> ;
+: TUCK SWAP OVER ;
+: 2DROP DROP DROP ;
+: 2DUP OVER OVER ;
+: 2SWAP ROT >R ROT R> ;
+: 2OVER >R >R 2DUP R> R> 2SWAP ;
+: 1APP SWAP >R ! R> ;
+: 2APP SWAP >R SWAP >R ! R> R> ;
+: 0PICK DUP ;
+: 1PICK OVER ;
+: 2PICK { DUP } 2APP ROT ;
+: <= 2DUP < { = } 1APP OR ;
+: > <= NOT ;
+: >= < NOT ;
+: != = NOT ;
+: NOP { } ! ;
+
+: SQUARE DUP * ;
+: CUBE DUP DUP * * ;
+: ABS DUP 0 < { -1 * } { } IF ! ;

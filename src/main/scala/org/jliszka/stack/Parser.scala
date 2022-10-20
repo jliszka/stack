@@ -142,7 +142,6 @@ object Parser {
         parseLit(Name("NOT")).map(_ => Not) |||
         parseLit(Name("DROP")).map(_ => Drop) |||
         parseLit(Name("DUP")).map(_ => Dup) |||
-        parseLit(Name("OVER")).map(_ => Over) |||
         parseLit(Name("SWAP")).map(_ => Swap) |||
         parseLit(Name(">R")).map(_ => ToR) |||
         parseLit(Name("R>")).map(_ => FromR) |||

@@ -24,7 +24,6 @@ case object Or extends Op("OR")
 case object Not extends Op("NOT")
 case object Drop extends Op("DROP")
 case object Dup extends Op("DUP")
-case object Over extends Op("OVER")
 case object Swap extends Op("SWAP")
 case object ToR extends Op(">R")
 case object FromR extends Op("R>")
@@ -43,24 +42,42 @@ case class Prog(defns: List[Defn], ops: List[Op])
 sealed abstract class Type(name: String) {
     override def toString = name
     def isLambda = false
+    def isPoly = false
+    def isStack = false
 }
-case object Num extends Type("int")
-case object Bool extends Type("bool")
-case class Poly(i: Int) extends Type(('a'+i-1).toChar.toString)
-case class TLambda(effects: Effects) extends Type(effects.toString) {
+
+sealed abstract class Stack(name: String) extends Type(name) {
+    def |>(it: Item): Stack = new |>(this, it)
+    def size: Int
+    override def isStack = true
+}
+case class SPoly(i: Int) extends Stack(if (i < 26) ('a'+i-1).toChar.toString + "*" else s"z$i*") {
+    override def isPoly = true
+    def size: Int = 1
+}
+case class |>(st: Stack, it: Item) extends Stack("|>") {
+    override def toString = s"$st $it"
+    def size: Int = st.size + 1
+}
+
+sealed abstract class Item(name: String) extends Type(name)
+case object Num extends Item("int")
+case object Bool extends Item("bool")
+case class Poly(i: Int) extends Item(if (i < 26) ('a'+i-1).toChar.toString else s"z$i") {
+    override def isPoly = true
+}
+case class TLambda(effects: Effects) extends Item(effects.toString) {
     override def isLambda = true
 }
 
-case class Effect(in: List[Type], out: List[Type]) {
-    override def toString = {
-        val inStr = in.map(_.toString).reverse.mkString(" ")
-        val outStr = out.map(_.toString).reverse.mkString(" ")
-        s"$inStr -- $outStr"
-    }
+case class Effect(in: Stack, out: Stack) {
+    override def toString = s"$in -- $out"
+    def map(f: Stack => Stack): Effect = Effect(f(in), f(out))
 }
 
 case class Effects(data: Effect, ret: Effect) {
     override def toString = s"($data, $ret)"
+    def map(f: Effect => Effect): Effects = Effects(f(data), f(ret))
 }
 
 
