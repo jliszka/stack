@@ -16,7 +16,7 @@
 : >= < NOT ;
 : != = NOT ;
 : NOP { } ! ;
-
 : SQUARE DUP * ;
 : CUBE DUP DUP * * ;
 : ABS DUP 0 < { -1 * } { } IF ! ;
+# : UNTIL >R DUP >R ! { R> R> } { R> R> SWAP >R DUP >R ! R> R> SWAP UNTIL } IF ! ;

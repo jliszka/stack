@@ -35,7 +35,7 @@ case class Fn(name: String) extends Op(name)
 case class Lambda(ops: List[Op]) extends Op("{ " + ops.mkString(" ") + " }")
 case object Call extends Op("!")
 
-case class Defn(name: String, ops: List[Op])
+case class Defn(name: String, defns: List[Defn], ops: List[Op])
 case class Prog(defns: List[Defn], ops: List[Op])
 
 
@@ -76,7 +76,10 @@ case class Effect(in: Stack, out: Stack) {
 }
 
 case class Effects(data: Effect, ret: Effect) {
-    override def toString = s"($data, $ret)"
+    override def toString = ret match {
+        case Effect(SPoly(a), SPoly(b)) if a == b => s"( $data )"
+        case _ => s"( $data, $ret )"
+    }
     def map(f: Effect => Effect): Effects = Effects(f(data), f(ret))
 }
 

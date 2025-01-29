@@ -150,6 +150,46 @@ I think it's worth having boolean literals in the language, but it's neat that y
 ## Type inference for recursive functions
 In functional programming languages, a typical approach for typing a recursive function is to type the body of the function while assuming the function itself has the polymorphic "bottom" type &alpha; &rarr; &beta;, and then let the type unification constraint solver determine whether &alpha; and &beta; have more specific types. In our case, the bottom type is `( a* -- b* )`.
 
+## The `DUP` problem
+
+`DUP` duplicates the top item on the stack and has type `( a* b - a* b b )`.
+Let's say we want to use this to apply a lambda twice. We could try something like this:
+```
+{ 4 } DUP R> ! >R !
+```
+In other words, duplicate the lambda, stash a copy on the return stack, apply the lambda, bring the copy back from the return stack and apply the lambda again. In this case we should end up with two `4`s on the stack.
+
+A problem arises when we try to typecheck this. `{ 4 }` has type `( a* -- a* int )`. The constraint
+on `DUP` is that both copies have the same type. So after `DUP`, the stack will look like
+
+```
+{ 4 }   // has type ( a* -- a* int )
+{ 4 }   // has type ( a* -- a* int )
+```
+
+We're going to apply the lambdas one after the other onto the same stack. The means that the return type of the first lambda has to match up with the input type of the second lambda. And that means unification is going to be faced with the rule `a* ~ a* int`, which is trouble.
+
+To get around this, we'd like every instance of a lambda to have a "fresh" type. So this should instead read:
+```
+{ 4 }   // has type ( a* -- a* int )
+{ 4 }   // has type ( b* -- b* int )
+```
+And now unification will get `b* ~ a* int` and the type of the whole thing will reduce to `( a* -- a* int int )`.
+
+However, during the type checking phase, there are are never really 2 copies of the lambda on the stack (we don't actually execute anything while type checking, of course). Instead, we're only keeping track of the net effect of the operations and any matching types that need unification. So after we push the lambda on, the net effect is
+
+```
+x* -- x* ( a* -- a* int )
+```
+
+and then after `DUP` the net effect is
+
+```
+x* -- x* b b
+where b ~ ( a* -- a* int )
+```
+
+
 ## Other examples
 We can give the `!` word (which "unpacks" and applies a lambda to the stack) an explicit type. Our system should type it as follows:
 

@@ -70,7 +70,7 @@ trait Parser[A] {
 
 object Parser {
     def lex(s: String): List[Token] = {
-        s.split(" ").toList.map({
+        s.split(" ").toList.map(_.trim).map({
             case "{" => LBracket
             case "}" => RBracket
             case ":" => Colon
@@ -154,7 +154,7 @@ object Parser {
     }
 
     val parseDefn: Parser[Defn] = {
-        (parseLit(Colon) >>> anyName &&& parseOp.repeat <<< parseLit(Semicolon)).map({ case (name, ops) => Defn(name, ops) })
+        (parseLit(Colon) >>> anyName &&& parseDefn.repeat &&& parseOp.repeat <<< parseLit(Semicolon)).map({ case ((name, defns), ops) => Defn(name, defns, ops) })
     }
 
     val parseProg: Parser[Prog] = {

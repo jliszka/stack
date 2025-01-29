@@ -23,19 +23,26 @@ object Typer {
 
     def check(prog: Prog, ctx: Map[String, Effect] = Map.empty): (Effects, Map[String, Effect]) = {
         reset()
-        val ctx2 = prog.defns.foldLeft(ctx)({ case (ctx, defn) => {
-            val effects = checkDefn(defn, ctx)
-            effects.ret match {
-                case (Effect(a, b)) if a == b => // OK
-                case _ => throw new Exception("Top-level function cannot have return stack effects")
-            }
-            ctx + (defn.name -> effects.data)
-        }})
-        (checkOps(prog.ops, ctx2), ctx2)
+        val ctx2 = checkDefns(prog.defns, ctx)
+        val retConstraint = Effect(stype, stype)
+        (checkOps(prog.ops, ctx2, retConstraint), ctx2)
     }
 
-    def checkDefn(defn: Defn, ctx: Map[String, Effect]): Effects = {
-        checkOps(defn.ops, ctx + (defn.name -> Effect(stype, stype)))
+    def checkDefns(defns: List[Defn], ctx: Map[String, Effect]): Map[String, Effect] = {
+        defns.foldLeft(ctx)({ case (ctx, defn) => {
+            ctx + (defn.name -> checkDefn(defn, ctx))
+        }})
+    }
+
+    def checkDefn(defn: Defn, ctx: Map[String, Effect]): Effect = {
+        val ctx2 = checkDefns(defn.defns, ctx)
+        val retConstraint = nop
+        val effects = checkOps(defn.ops, ctx2 + (defn.name -> Effect(stype, stype)), retConstraint)
+        simplify(effects.ret) match {
+            case (Effect(a, b)) if a == b => // OK
+            case _ => throw new Exception(s"Named function ${defn.name} cannot have return stack effects: ${effects.ret}")
+        }
+        simplify(effects.data)
     }
 
     def checkOp(op: Op, ctx: Map[String, Effect]): Effects = {
@@ -82,18 +89,27 @@ object Typer {
             case True => noRet(s, s |> Bool)
             case False => noRet(s, s |> Bool)
             case Fn(name) => Effects(freshen(ctx(name)), nop)
-            case Lambda(ops) => noRet(s, s |> TLambda(checkOps(ops, ctx)))
+            case Lambda(ops) => {
+                val retConstraint = Effect(stype, stype)
+                noRet(s, s |> TLambda(checkOps(ops, ctx, retConstraint)))
+            }
             case Call => {
-                val ls = stype
-                val rs = stype
-                noRet(ls |> TLambda(Effects(Effect(ls, rs), nop)), rs)
+                val dl = stype
+                val dr = stype
+                val rl = stype
+                val rr = stype
+                Effects(
+                    Effect(dl |> TLambda(Effects(Effect(dl, dr), Effect(rl, rr))), dr),
+                    Effect(rl, rr)
+                )
             }
         }
     }
 
-    def checkOps(ops: List[Op], ctx: Map[String, Effect]): Effects = {
+    def checkOps(ops: List[Op], ctx: Map[String, Effect], retConstraint: Effect): Effects = {
         val (effects, matches) = checkOpsRec(ops, ctx, Effects(nop, nop), Nil)
-        val poly: Map[Int, Type] = unify(matches.toSet)
+        val retMatches = matcherT(effects.ret.in, retConstraint.in) ++ matcherT(effects.ret.out, retConstraint.out)
+        val poly: Map[Int, Type] = unify(matches.toSet | retMatches.toSet)
         effects.map(applyPoly(_, poly))
     }
 
@@ -207,7 +223,7 @@ object Typer {
             } yield m
         }).toSet
 
-        val newMatches = matches union lambdaMatches union stackMatches
+        val newMatches = matches union stackMatches //union lambdaMatches 
         if (newMatches.size > matches.size) {
             unifyRec(newMatches)
         } else {
